@@ -199,6 +199,8 @@ public class DcmSnd extends StorageCommitmentService {
     private long totalSize = 0L;
 
     private boolean fileref = false;
+    
+    private boolean fmi = false;
 
     private boolean stgcmt = false;
     
@@ -330,6 +332,11 @@ public class DcmSnd extends StorageCommitmentService {
     public final void setSendFileRef(boolean fileref) {
         this.fileref = fileref;
     }
+    
+    public final void setSendFmi(boolean fmi) {
+
+        this.fmi = fmi;
+    }
 
     public final void setStorageCommitment(boolean stgcmt) {
         this.stgcmt = stgcmt;
@@ -455,6 +462,9 @@ public class DcmSnd extends StorageCommitmentService {
                 "the DICOM file using DCM4CHE URI Referenced Transfer Syntax " +
                 "to import DICOM objects on a given file system to a DCM4CHEE " +
                 "archive.");
+        
+        opts.addOption("fmi", false,
+            "send objects with File Meta Information (FMI) header included");
 
         OptionBuilder.withArgName("username");
         OptionBuilder.hasArg();
@@ -701,6 +711,8 @@ public class DcmSnd extends StorageCommitmentService {
         dcmsnd.setOfferDefaultTransferSyntaxInSeparatePresentationContext(
                 cl.hasOption("ts1"));
         dcmsnd.setSendFileRef(cl.hasOption("fileref"));
+        dcmsnd.setSendFmi(cl.hasOption("fmi"));
+        
         if (cl.hasOption("username")) {
             String username = cl.getOptionValue("username");
             UserIdentity userId;
@@ -847,6 +859,7 @@ public class DcmSnd extends StorageCommitmentService {
                 dcmsnd.setTrustStorePassword(
                         cl.getOptionValue("truststorepw"));
             }
+            
             try {
                 dcmsnd.initTLS();
             } catch (Exception e) {
@@ -1329,7 +1342,7 @@ public class DcmSnd extends StorageCommitmentService {
             } else if (tsuid.equals(info.tsuid)) {
                 FileInputStream fis = new FileInputStream(info.f);
                 try {
-                    long skip = info.fmiEndPos;
+                    long skip = fmi ? 132 : info.fmiEndPos;
                     while (skip > 0)
                         skip -= fis.skip(skip);
                     out.copyFrom(fis);
